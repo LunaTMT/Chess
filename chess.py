@@ -55,7 +55,9 @@ class Player:
         if self.name == "1":
             return[
                 [self.R1, self.KN1, self.B1, self.K, self.Q, self.B1,  self.KN2,  self.R2],
-                [self.P1,  self.P2,  self.P3, self.P4, self.P5, self.P6, self.P7,  self.P8]] 
+                [self.P1,  self.P2,  self.P3, self.P4, self.P5, self.P6, self.P7,  self.P8]]
+            
+            
         else:
             return[
                 [self.P1,  self.P2,  self.P3, self.P4, self.P5, self.P6, self.P7,  self.P8],
@@ -92,6 +94,7 @@ class Player:
         piece.position = position
         
     def remove_piece(self, position):
+
         for (i, j), piece in np.ndenumerate(self.pieces):
             if isinstance(piece, Piece):
                 if  piece.position == position:
@@ -134,12 +137,14 @@ class Board:
 
 
     def get_pos(self, position):
+
         x, y = position
         if self.check_bounds(position):
             return self.board[x][y]
         return False
     
     def set_pos(self, piece, new_pos, player, old_pos):
+
         taken_from = []
 
         a, b = old_pos
@@ -156,6 +161,41 @@ class Board:
 
         return taken_from
 
+
+    """def create(self):
+
+        pygame.init()
+        Width = 1168
+        Height = 1168
+    
+        scrn = pygame.display.set_mode((Width, Height))
+        
+        pygame.display.set_caption('Chess')
+     
+        imp = pygame.image.load("img/chess_board.png").convert()
+        
+        scrn.blit(imp, (0, 0))
+
+        pygame.display.flip()
+        status = True
+        while (status):
+
+            for event in pygame.event.get():
+
+                if event.type == KEYDOWN and event.key == K_ESCAPE:
+                    status = False
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    print(event.button)
+
+                if event.type == pygame.QUIT:
+                    status = False
+
+                
+        
+        pygame.quit()
+        """
+
     def create(self):
         self.board = np.array([[self.p1.R1,   self.p1.KN1,   self.p1.B1,   self.p1.Q,   self.p1.K,   self.p1.B2,   self.p1.KN2,   self.p1.R2],
                               [self.p1.P1, self.p1.P2, self.p1.P3, self.p1.P4, self.p1.P5, self.p1.P6, self.p1.P7, self.p1.P8],
@@ -168,6 +208,7 @@ class Board:
                               [self.p2.R1,   self.p2.KN1,   self.p2.B1,   self.p2.Q,   self.p2.K,   self.p2.B2,   self.p2.KN2,   self.p2.R2]])
 
     def update_valid(self, valid_pos, remove):
+       
         if remove:
             for choice, (x,y) in enumerate(valid_pos, start=1):
                 item = self.board[x][y]
@@ -218,15 +259,48 @@ class Board:
                             valid.append(position)
                             break
                             
-                    elif key in ("left", "right", "up", "down"): #Must break as succeeding values all invalid for horizontal and diagonal
+
+                    elif key in ("left", "right", "up", "down", "TL", "TR", "BL", "BR"): #Must break as succeeding values all invalid for horizontal and diagonal
                         break
+
+
         return valid    
+
+
+        #Verifying the 'valid-movememnts' for that piece 
+        """for position in valid_pos:
+            item = self.get_pos(position)
+            if item:
+                if item == ' 0 ':
+                    valid.append(position)
+                elif isinstance(item, Piece) and  item.player != player_name:
+                    valid.append(position)
+            
+        #Subtle change with attack for pawns
+        if isinstance(piece, Pawns):
+            for position in piece.valid_attack():
+            
+                item = self.get_pos(position)
+                if item:
+                    #Checking if valid attack:
+                    # is empty? 
+                    # is it one of my own pieces? 
+                    # is it out of bounds?
+                    if item !=  ' 0 ' and item.name != player_name: # A valid attack
+                        valid.append(position)
+                    else:
+                        pass"""
+
     
     def check_bounds(self, position):
         for i in position:
             if i > 7 or i < 0:
                 return False
         return True
+
+        
+       
+
 
 class Piece():
     def __init__(self, position, player, piece_name, piece_sym, alive=None):
@@ -238,10 +312,68 @@ class Piece():
         self.alive = True
 
     def __str__(self):
-        return self.player + '_' + self.sym   
+        return self.player + '_' + self.sym
+    
 
     def get_pos(self):
         return self.position
+
+    def vertical_horizontal(self):
+        coord = np.moveaxis(np.mgrid[:8,:8], 0, -1)
+        i, j = self.position
+   
+        row = list(map(tuple, coord[i , :]))
+        column = list(map(tuple, coord[: , j]))
+
+
+
+        dict_={"left": row[:j][::-1],     #sorted(row[:j], key=itemgetter(1)),
+             "right": row[j+1:],
+             "up": column[:i] if self.player == "1" else column[:i][::-1],
+             "down": column[i+1:] if self.player == "1" else column[i+1:][::-1]}
+
+        return dict_
+
+    def diagonal_sub(self, name, iter, i, j):
+        if name == "TL":
+            return (i - (1*iter), j - (1*iter))
+        elif name == "TR":
+            return (i - (1*iter), j + (1*iter))
+        elif name == "BL":
+            return (i + (1*iter), j - (1*iter))
+        else:
+            return (i + (1*iter), j + (1*iter))
+           
+
+        
+
+    def diagonal(self):
+        dict_ = {
+            "TL" : [],
+            "TR" : [],
+            "BL" : [],
+            "BR" : [],
+        }
+
+        
+        
+        for key, _ in dict_.items():
+            iter = 1
+            temp = []
+            x, y = i, j = self.position 
+ 
+            diag_val = (self.diagonal_sub(key, iter, i, j))
+
+            while min(diag_val) >= 0 and max(diag_val) <= 7:
+                temp.append(diag_val)
+                diag_val = self.diagonal_sub(key, iter, i, j)
+                x, y = temp[iter-1]
+                iter += 1
+            dict_[key] = temp[1:]
+        return dict_          
+
+                
+            
 
 class Pawn(Piece):
 
@@ -260,40 +392,34 @@ class Pawn(Piece):
         else:
             dict_['A'] = [(i+1, j-1),(i+1, j+1)]
 
+
         #Movements from default and elsewhere
         if self.default == True:
             self.default = False
             dict_["H"] = [tuple(map(lambda i, j: i + j, self.position, (p*i, 0)))  for i in range(1, 3)] #can only move two squares on def
         else:
             dict_["H"] = [tuple(map(lambda i, j: i + j, self.position, (p*i, 0))) for i in range(1, 2)]
-  
+    
         return dict_
 
 class Knight(Piece):
+   
     def valid_moves(self):
         i,j = self.position
         return { "L" : [(i-2, j-1), (i-2, j+1), (i-1, j-2), (i-1, j+2), (i+2, j-1), (i+2, j+1), (i+1, j-2), (i+1, j+2)]}
 
-
 class Rook(Piece):
+
     def valid_moves(self):
-        coord = np.moveaxis(np.mgrid[:8,:8], 0, -1)
-        i, j = self.position
-   
-        row = list(map(tuple, coord[i , :]))
-        column = list(map(tuple, coord[: , j]))
-
-        dict_={"left": row[:j][::-1], 
-             "right": row[j+1:],
-             "up": column[:i] if self.player == "1" else column[:i][::-1],
-             "down": column[i+1:] if self.player == "1" else column[i+1:][::-1]}
-
-        return dict_
+        return self.vertical_horizontal()
         
 class Bishop(Piece):
 
-    def move():
-        pass
+    def valid_moves(self):
+        return self.diagonal()
+
+            
+            
 
 class Queen(Piece):
      
@@ -306,22 +432,22 @@ class King(Piece):
         pass
 
 
+
 def get_valid_piece(player):
     piece_name = input("\nPlease enter piece from following: ").upper()
     while not player.valid_piece(piece_name):
         piece_name = input("\nPlease enter piece from following: ").upper()
     return player.get_piece_obj(piece_name) #obj ref
 
-
+#def print_choices
 
 
 if __name__ == "__main__":
 
     
    
-    
-    #player one create
     p1_sym = ['♟︎', '♘', '♖', '♗', '♕', '♔']
+    #player one create
     p1_pawn_pos = [(1,0), (1,1), (1,2), (1,3), (1,4), (1,5), (1,6), (1,7)]
     p1_knight_pos = [(0,1), (0,6)]
     p1_rook_pos = [(0,0), (0,7)]
