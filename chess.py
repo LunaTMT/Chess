@@ -3,6 +3,7 @@ import numpy as np
 import sys
 from termcolor import colored, cprint
 import os
+from operator import itemgetter
 
 
 """from pygame.locals import (
@@ -15,28 +16,30 @@ import os
 
 class Player:
 
-    def __init__(self, pawn_pos, knight_pos, rook_pos, bishop_pos, queen_pos, king_pos,  player_name):
+    def __init__(self, pawn_pos, knight_pos, rook_pos, bishop_pos, queen_pos, king_pos,  player_name, piece_sym):
 
-        self.P1 = Pawn(pawn_pos[0], player_name, 'P1')
-        self.P2 = Pawn(pawn_pos[1], player_name, 'P2')
-        self.P3 = Pawn(pawn_pos[2], player_name, 'P3')
-        self.P4 = Pawn(pawn_pos[3], player_name, 'P4')
-        self.P5 = Pawn(pawn_pos[4], player_name, 'P5')
-        self.P6 = Pawn(pawn_pos[5], player_name, 'P6')
-        self.P7 = Pawn(pawn_pos[6], player_name, 'P7')
-        self.P8 = Pawn(pawn_pos[7], player_name, 'P8')
+         
 
-        self.KN1 = Knight(knight_pos[0], player_name, 'Kn1')
-        self.KN2 = Knight(knight_pos[1], player_name, 'Kn2')
+        self.P1 = Pawn(pawn_pos[0], player_name, 'P1', piece_sym[0])
+        self.P2 = Pawn(pawn_pos[1], player_name, 'P2', piece_sym[0])
+        self.P3 = Pawn(pawn_pos[2], player_name, 'P3', piece_sym[0])
+        self.P4 = Pawn(pawn_pos[3], player_name, 'P4', piece_sym[0])
+        self.P5 = Pawn(pawn_pos[4], player_name, 'P5', piece_sym[0])
+        self.P6 = Pawn(pawn_pos[5], player_name, 'P6', piece_sym[0])
+        self.P7 = Pawn(pawn_pos[6], player_name, 'P7', piece_sym[0])
+        self.P8 = Pawn(pawn_pos[7], player_name, 'P8', piece_sym[0])
 
-        self.R1 = Rook(rook_pos[0], player_name, 'R1')
-        self.R2 = Rook(rook_pos[1], player_name, 'R2')
+        self.KN1 = Knight(knight_pos[0], player_name, 'Kn1', piece_sym[1])
+        self.KN2 = Knight(knight_pos[1], player_name, 'Kn2', piece_sym[1])
 
-        self.B1 = Bishop(bishop_pos[0], player_name, 'B1')
-        self.B2 = Bishop(bishop_pos[1], player_name, 'B2')
+        self.R1 = Rook(rook_pos[0], player_name, 'R1', piece_sym[2])
+        self.R2 = Rook(rook_pos[1], player_name, 'R2', piece_sym[2])
 
-        self.Q = Queen(queen_pos, player_name, 'Q')
-        self.K = King(king_pos, player_name, 'K')
+        self.B1 = Bishop(bishop_pos[0], player_name, 'B1', piece_sym[3])
+        self.B2 = Bishop(bishop_pos[1], player_name, 'B2', piece_sym[3])
+
+        self.Q = Queen(queen_pos, player_name, 'Q', piece_sym[4])
+        self.K = King(king_pos, player_name, 'K', piece_sym[5])
 
         self.name = player_name
 
@@ -73,8 +76,7 @@ class Player:
                if obj_name in row:
                    return False
             return True
-        else:
-            return False
+
      
     #returns obj by name
     def get_piece_obj(self, piece_name):
@@ -92,9 +94,10 @@ class Player:
         piece.position = position
         
     def remove_piece(self, position):
-         for (i, j), piece in np.ndenumerate(self.pieces):
+
+        for (i, j), piece in np.ndenumerate(self.pieces):
             if isinstance(piece, Piece):
-                if piece.position == position:
+                if  piece.position == position:
                     self.pieces[i][j] = piece.name
                     piece.alive = False
                     return piece.name
@@ -145,12 +148,12 @@ class Board:
         taken_from = []
 
         a, b = old_pos
-        self.board[a][b] = " 0 "
+        self.board[a][b] = " _ "
         
         # if the new position is an enemy piece
         # return the enemy name, Else False
         new_item = self.get_pos(new_pos)
-        if new_item != " 0 " and new_item[0] != player:
+        if new_item != " _ " and new_item[0] != player:
             taken_from = ["2", new_pos]  if player == "1" else ["1", new_pos]
 
         x, y = new_pos
@@ -196,12 +199,12 @@ class Board:
     def create(self):
         self.board = np.array([[self.p1.R1,   self.p1.KN1,   self.p1.B1,   self.p1.Q,   self.p1.K,   self.p1.B2,   self.p1.KN2,   self.p1.R2],
                               [self.p1.P1, self.p1.P2, self.p1.P3, self.p1.P4, self.p1.P5, self.p1.P6, self.p1.P7, self.p1.P8],
-                              [' 0 ',  ' 0 ',  ' 0 ',  ' 0 ',  ' 0 ',  ' 0 ',   ' 0 ',   ' 0 '],
-                              [' 0 ',  ' 0 ',  ' 0 ',  ' 0 ',  ' 0 ',  ' 0 ',   ' 0 ',   ' 0 '],
+                              [' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',   ' _ ',   ' _ '],
+                              [' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',   ' _ ',   ' _ '],
 
-                              [' 0 ',  ' 0 ',  ' 0 ',  ' 0 ',  ' 0 ',  ' 0 ',   ' 0 ',   ' 0 '],
-                              [' 0 ',  ' 0 ',  ' 0 ',  ' 0 ',  ' 0 ',  ' 0 ',   ' 0 ',   ' 0 '],
-                             [self.p2.P1, self.p2.P2, self.p2.P3, self.p2.P4, self.p2.P5, self.p2.P6, self.p2.P7, self.p2.P8],
+                              [' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',   ' _ ',   ' _ '],
+                              [' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',   ' _ ',   ' _ '],
+                              [self.p2.P1, self.p2.P2, self.p2.P3, self.p2.P4, self.p2.P5, self.p2.P6, self.p2.P7, self.p2.P8],
                               [self.p2.R1,   self.p2.KN1,   self.p2.B1,   self.p2.Q,   self.p2.K,   self.p2.B2,   self.p2.KN2,   self.p2.R2]])
 
     def update_valid(self, valid_pos, remove):
@@ -210,15 +213,15 @@ class Board:
             for choice, (x,y) in enumerate(valid_pos, start=1):
                 item = self.board[x][y]
 
-                if item[10:11] == str(choice):
-                    self.board[x][y] = " 0 "
+                if item[10:][:len(str(choice))] == str(choice):
+                    self.board[x][y] = " _ "
                 else:
                     self.board[x][y] = colored(item[9:12], 'white', attrs=['blink'])
         else:
             for choice, (x,y) in enumerate(valid_pos, start=1):
                 item = self.board[x][y]
 
-                if item == ' 0 ':
+                if item == ' _ ':
                     self.board[x][y] =  colored(f' {choice} ', 'green', attrs=['blink'])
                 else:
                     self.board[x][y] = colored(item, 'green', attrs=['blink'])
@@ -227,23 +230,37 @@ class Board:
     def check_valid(self, valid_pos, piece, player_name):
         valid = []
 
-        
+        H = []
+
         #diagonal and straight where and an item blocking will block all further items
         for key, value in valid_pos.items(): 
+
             for position in value:
+
                 item = self.get_pos(position)
                 if item:
-                    if item == ' 0 ' and key != 'A':
+                    if item == ' _ ' and key != 'A':
                         valid.append(position)
                     
+                    #If in-path is a piece
                     elif isinstance(item, Piece) and  item.player != player_name:
                         
-                        if isinstance(item, Pawn) and key != 'A':
-                            pass
+                        #If starting piece is a pawn and is not in valid attacks 'A' 
+                        if isinstance(piece, Pawn) and key != 'A':
+                            break
+                        
+                        #If starting piece is a pawn and in valid attacks OR a knight
+                        # There pieces should not be stopped in their path 
+                        elif (isinstance(piece, Pawn) and key == 'A') or isinstance(piece, Knight):
+                            valid.append(position)
+                        
+                        #Every other piece beyond the path is blocked when there is a piece in the way
                         else:
                             valid.append(position)
+                            break
+                            
 
-                    elif key in ("V", "H"): #Must break as succeeding values all invalid for horizontal and diagonal
+                    elif key in ("left", "right", "up", "down"): #Must break as succeeding values all invalid for horizontal and diagonal
                         break
         return valid    
 
@@ -272,8 +289,7 @@ class Board:
                     else:
                         pass"""
 
-        
-  
+    
     def check_bounds(self, position):
         for i in position:
             if i > 7 or i < 0:
@@ -285,11 +301,11 @@ class Board:
 
 
 class Piece():
-    def __init__(self, position, player, piece_sym, piece_name, alive=None):
+    def __init__(self, position, player, piece_name, piece_sym, alive=None):
         self.position = position
         self.player = player
-        self.sym = piece_sym
         self.name = piece_name
+        self.sym = piece_sym
         self.default = True
         self.alive = True
 
@@ -303,12 +319,7 @@ class Piece():
 
 
 class Pawn(Piece):
-    def __init__(self, position, player, piece_name):
-        super().__init__(position, player, "♟",  piece_name)
-    
-    def __del__(self):
-        print(f"deleted : {self.name}")
-        
+
     #returns valid moves
     def valid_moves(self):
         i, j = self.position
@@ -335,58 +346,41 @@ class Pawn(Piece):
         return dict_
 
 class Knight(Piece):
-    def __init__(self, position, player,  piece_name):
-        super().__init__(position, player, "♞",  piece_name)
-        
+   
     def valid_moves(self):
         i,j = self.position
         return { "L" : [(i-2, j-1), (i-2, j+1), (i-1, j-2), (i-1, j+2), (i+2, j-1), (i+2, j+1), (i+1, j-2), (i+1, j+2)]}
 
 
 class Rook(Piece):
-    def __init__(self, position, player,  piece_name):
-        super().__init__(position, player, "♜",  piece_name)
-        
+
     def valid_moves(self):
         coord = np.moveaxis(np.mgrid[:8,:8], 0, -1)
         i, j = self.position
    
-        row = coord[i , :]
-        column = coord[: , j]
-
-        #row = [i for (x,y )in coord[i , :] if (i[0],i[1]) != self.position]
-        row={"left": [coord[i , :][:i]],
-             "right": [coord[i , :][i+1:]]}
-        
-        column={"up": [column[:j]],
-             "down": [coord[: , j][j+1:]]}
+        row = list(map(tuple, coord[i , :]))
+        column = list(map(tuple, coord[: , j]))
 
 
-        #column =  [i for i in coord[: , j] if (i[0],i[1]) != self.position]
 
-
-        dict_ = {   "H" : row,   #[1:] if self.player == "1" else row[1:],
-                    "V" : column if self.player == "1" else column[::-1]}
+        dict_={"left": row[:j][::-1],     #sorted(row[:j], key=itemgetter(1)),
+             "right": row[j+1:],
+             "up": column[:i] if self.player == "1" else column[:i][::-1],
+             "down": column[i+1:] if self.player == "1" else column[i+1:][::-1]}
 
         return dict_
         
 class Bishop(Piece):
-    def __init__(self, position, player,  piece_name):
-        super().__init__(position, player, "♝",  piece_name)
-        
+
     def move():
         pass
 
 class Queen(Piece):
-    def __init__(self, position, player,  piece_name):
-        super().__init__(position, player, "♛",  piece_name)
-        
+     
     def move():
         pass
 
 class King(Piece):
-    def __init__(self, position, player,  piece_name):
-        super().__init__(position, player, "♚",  piece_name)
         
     def move():
         pass
@@ -406,7 +400,7 @@ if __name__ == "__main__":
 
     
    
-
+    p1_sym = ['♟︎', '♘', '♖', '♗', '♕', '♔']
     #player one create
     p1_pawn_pos = [(1,0), (1,1), (1,2), (1,3), (1,4), (1,5), (1,6), (1,7)]
     p1_knight_pos = [(0,1), (0,6)]
@@ -414,16 +408,17 @@ if __name__ == "__main__":
     p1_bishop = [(0,2), (0,5)]
     p1_queen = (0,3)
     p1_king = (0,4)
-    p1 = Player(p1_pawn_pos, p1_knight_pos, p1_rook_pos, p1_bishop, p1_queen, p1_king,  "1")
+    p1 = Player(p1_pawn_pos, p1_knight_pos, p1_rook_pos, p1_bishop, p1_queen, p1_king,  "1", p1_sym)
 
     #player two create
+    p2_sym = ['♙', '♞', '♜', '♝', '♛', '♚']
     p2_pawn_pos = [(6,0), (6,1), (6,2), (6,3), (6,4), (6,5), (6,6), (6,7)]
     p2_knight_pos = [(7,1), (7,6)]
     p2_rook_pos = [(7,0), (7,7)]
     p2_bishop = [(7,2), (7,5)]
     p2_queen = (7,3)
     p2_king = (7,4)
-    p2 = Player(p2_pawn_pos,  p2_knight_pos, p2_rook_pos, p2_bishop, p2_queen, p2_king,  "2")
+    p2 = Player(p2_pawn_pos,  p2_knight_pos, p2_rook_pos, p2_bishop, p2_queen, p2_king,  "2", p2_sym)
 
     #create the board with both players and their pieces
     board = Board(p1, p2)
