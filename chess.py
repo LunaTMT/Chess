@@ -54,14 +54,14 @@ class Player:
         
         if self.name == "1":
             return[
-                [self.R1, self.KN1, self.B1, self.K, self.Q, self.B1,  self.KN2,  self.R2],
+                [self.R1, self.KN1, self.B1, self.K, self.Q, self.B2,  self.KN2,  self.R2],
                 [self.P1,  self.P2,  self.P3, self.P4, self.P5, self.P6, self.P7,  self.P8]]
             
             
         else:
             return[
                 [self.P1,  self.P2,  self.P3, self.P4, self.P5, self.P6, self.P7,  self.P8],
-                [self.R1, self.KN1, self.B1, self.K, self.Q, self.B1,  self.KN2,  self.R2]]
+                [self.R1, self.KN1, self.B1, self.K, self.Q, self.B2,  self.KN2,  self.R2]]
 
     def print_pieces(self):
         for row in self.pieces:
@@ -153,7 +153,7 @@ class Board:
         # if the new position is an enemy piece
         # return the enemy name, Else False
         new_item = self.get_pos(new_pos)
-        if new_item != " _ " and new_item[0] != player:
+        if isinstance(new_item, Piece) and new_item.player != player:
             taken_from = ["2", new_pos]  if player == "1" else ["1", new_pos]
 
         x, y = new_pos
@@ -213,10 +213,11 @@ class Board:
             for choice, (x,y) in enumerate(valid_pos, start=1):
                 item = self.board[x][y]
 
-                if item[10:][:len(str(choice))] == str(choice):
-                    self.board[x][y] = " _ "
-                else:
-                    self.board[x][y] = colored(item[9:12], 'white', attrs=['blink'])
+                if isinstance(item, Piece):
+                    item.green = False
+                elif item[10:][:len(str(choice))] == str(choice):
+                        self.board[x][y] = " _ "
+
         else:
             for choice, (x,y) in enumerate(valid_pos, start=1):
                 item = self.board[x][y]
@@ -224,7 +225,7 @@ class Board:
                 if item == ' _ ':
                     self.board[x][y] =  colored(f' {choice} ', 'green', attrs=['blink'])
                 else:
-                    self.board[x][y] = colored(item, 'green', attrs=['blink'])
+                    item.green = True
              
 
     def check_valid(self, valid_pos, piece, player_name):
@@ -263,35 +264,12 @@ class Board:
                     elif key in ("left", "right", "up", "down", "TL", "TR", "BL", "BR"): #Must break as succeeding values all invalid for horizontal and diagonal
                         break
 
-
+        if isinstance(piece, Queen):
+            return list(set(valid))
+    
         return valid    
 
 
-        #Verifying the 'valid-movememnts' for that piece 
-        """for position in valid_pos:
-            item = self.get_pos(position)
-            if item:
-                if item == ' 0 ':
-                    valid.append(position)
-                elif isinstance(item, Piece) and  item.player != player_name:
-                    valid.append(position)
-            
-        #Subtle change with attack for pawns
-        if isinstance(piece, Pawns):
-            for position in piece.valid_attack():
-            
-                item = self.get_pos(position)
-                if item:
-                    #Checking if valid attack:
-                    # is empty? 
-                    # is it one of my own pieces? 
-                    # is it out of bounds?
-                    if item !=  ' 0 ' and item.name != player_name: # A valid attack
-                        valid.append(position)
-                    else:
-                        pass"""
-
-    
     def check_bounds(self, position):
         for i in position:
             if i > 7 or i < 0:
@@ -310,10 +288,14 @@ class Piece():
         self.sym = piece_sym
         self.default = True
         self.alive = True
+        self.green = False
 
     def __str__(self):
-        return self.player + '_' + self.sym
-    
+        item = self.player + '_' + self.sym
+
+        if self.green:
+            return colored(item, 'green', attrs=['blink'])
+        return item
 
     def get_pos(self):
         return self.position
@@ -329,8 +311,8 @@ class Piece():
 
         dict_={"left": row[:j][::-1],     #sorted(row[:j], key=itemgetter(1)),
              "right": row[j+1:],
-             "up": column[:i] if self.player == "1" else column[:i][::-1],
-             "down": column[i+1:] if self.player == "1" else column[i+1:][::-1]}
+             "up": column[:i][::-1], #if self.player == "1" else column[:i][::-1],
+             "down": column[i+1:]} #if self.player == "1" else column[i+1:][::-1]}
 
         return dict_
 
@@ -343,10 +325,6 @@ class Piece():
             return (i + (1*iter), j - (1*iter))
         else:
             return (i + (1*iter), j + (1*iter))
-           
-
-        
-
     def diagonal(self):
         dict_ = {
             "TL" : [],
@@ -355,8 +333,6 @@ class Piece():
             "BR" : [],
         }
 
-        
-        
         for key, _ in dict_.items():
             iter = 1
             temp = []
@@ -372,7 +348,9 @@ class Piece():
             dict_[key] = temp[1:]
         return dict_          
 
-                
+    def square(self):  
+        i, j = self.position
+        return {"square" :  [(i-1, j-1),(i-1, j), (i-1, j+1), (i, j-1), (i, j+1), (i+1, j-1), (i+1, j), (i+1, j+1)]}
             
 
 class Pawn(Piece):
@@ -418,18 +396,15 @@ class Bishop(Piece):
     def valid_moves(self):
         return self.diagonal()
 
-            
-            
-
 class Queen(Piece):
      
-    def move():
-        pass
+    def valid_moves(self):
+       return self.vertical_horizontal() | self.diagonal() |  self.square()
 
 class King(Piece):
-        
-    def move():
-        pass
+    
+    def valid_moves(self):
+        return self.square()
 
 
 
