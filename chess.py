@@ -5,6 +5,9 @@ from termcolor import colored, cprint
 import os
 from operator import itemgetter
 
+import time
+
+
 
 """from pygame.locals import (
     MOUSEBUTTONDOWN,
@@ -77,7 +80,6 @@ class Player:
                    return False
             return True
 
-     
     #returns obj by name
     def get_piece_obj(self, piece_name):
         return getattr(self, piece_name)       
@@ -113,7 +115,27 @@ class Player:
             for piece in self.taken:
                 print(f"|   {piece[0]}  |  {piece[1]}   |")
     
+    def win(self):
+        if "Q" in [x for (x, _) in self.taken]:
 
+            if self.name == "1":
+                print("""
+                    ██████╗░██╗░░░░░░█████╗░██╗░░░██╗███████╗██████╗░  ░░███╗░░  ░██╗░░░░░░░██╗██╗███╗░░██╗░██████╗
+                    ██╔══██╗██║░░░░░██╔══██╗╚██╗░██╔╝██╔════╝██╔══██╗  ░████║░░  ░██║░░██╗░░██║██║████╗░██║██╔════╝
+                    ██████╔╝██║░░░░░███████║░╚████╔╝░█████╗░░██████╔╝  ██╔██║░░  ░╚██╗████╗██╔╝██║██╔██╗██║╚█████╗░
+                    ██╔═══╝░██║░░░░░██╔══██║░░╚██╔╝░░██╔══╝░░██╔══██╗  ╚═╝██║░░  ░░████╔═████║░██║██║╚████║░╚═══██╗
+                    ██║░░░░░███████╗██║░░██║░░░██║░░░███████╗██║░░██║  ███████╗  ░░╚██╔╝░╚██╔╝░██║██║░╚███║██████╔╝
+                    ╚═╝░░░░░╚══════╝╚═╝░░╚═╝░░░╚═╝░░░╚══════╝╚═╝░░╚═╝  ╚══════╝  ░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚══╝╚═════╝░""")
+            else:
+                print("""
+                    ██████╗░██╗░░░░░░█████╗░██╗░░░██╗███████╗██████╗░  ██████╗░  ░██╗░░░░░░░██╗██╗███╗░░██╗░██████╗
+                    ██╔══██╗██║░░░░░██╔══██╗╚██╗░██╔╝██╔════╝██╔══██╗  ╚════██╗  ░██║░░██╗░░██║██║████╗░██║██╔════╝
+                    ██████╔╝██║░░░░░███████║░╚████╔╝░█████╗░░██████╔╝  ░░███╔═╝  ░╚██╗████╗██╔╝██║██╔██╗██║╚█████╗░
+                    ██╔═══╝░██║░░░░░██╔══██║░░╚██╔╝░░██╔══╝░░██╔══██╗  ██╔══╝░░  ░░████╔═████║░██║██║╚████║░╚═══██╗
+                    ██║░░░░░███████╗██║░░██║░░░██║░░░███████╗██║░░██║  ███████╗  ░░╚██╔╝░╚██╔╝░██║██║░╚███║██████╔╝
+                    ╚═╝░░░░░╚══════╝╚═╝░░╚═╝░░░╚═╝░░░╚══════╝╚═╝░░╚═╝  ╚══════╝  ░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚══╝╚═════╝░""")
+            return True
+        return False
 
 class Board:
     
@@ -411,15 +433,46 @@ class King(Piece):
 def get_valid_piece(player):
     piece_name = input("\nPlease enter piece from following: ").upper()
     while not player.valid_piece(piece_name):
-        piece_name = input("\nPlease enter piece from following: ").upper()
+        piece_name = input("\nPlease enter a valid piece: ").upper()
     return player.get_piece_obj(piece_name) #obj ref
 
-#def print_choices
+def print_player(player):
+    if player == "1":
+        print("""
+███████████████████████████████████████████
+█▄─▄▄─█▄─▄████▀▄─██▄─█─▄█▄─▄▄─█▄─▄▄▀███▀░██
+██─▄▄▄██─██▀██─▀─███▄─▄███─▄█▀██─▄─▄████░██
+▀▄▄▄▀▀▀▄▄▄▄▄▀▄▄▀▄▄▀▀▄▄▄▀▀▄▄▄▄▄▀▄▄▀▄▄▀▀▀▄▄▄▀""")
+    else:
+        print("""
+████████████████████████████████████████████
+█▄─▄▄─█▄─▄████▀▄─██▄─█─▄█▄─▄▄─█▄─▄▄▀███▀▄▄▀█
+██─▄▄▄██─██▀██─▀─███▄─▄███─▄█▀██─▄─▄████▀▄██
+▀▄▄▄▀▀▀▄▄▄▄▄▀▄▄▀▄▄▀▀▄▄▄▀▀▄▄▄▄▄▀▄▄▀▄▄▀▀▀▄▄▄▄▀""")
+        
+def print_main_menu():
+    clear = lambda: os.system('clear')
+    clear()
 
+    print("""
+            ░█████╗░██╗░░██╗███████╗░██████╗░██████╗
+            ██╔══██╗██║░░██║██╔════╝██╔════╝██╔════╝
+            ██║░░╚═╝███████║█████╗░░╚█████╗░╚█████╗░
+            ██║░░██╗██╔══██║██╔══╝░░░╚═══██╗░╚═══██╗
+            ╚█████╔╝██║░░██║███████╗██████╔╝██████╔╝
+            ░╚════╝░╚═╝░░╚═╝╚══════╝╚═════╝░╚═════╝░
+
+            █████╗█████╗█████╗█████╗█████╗█████╗█████╗
+            ╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝""")
+
+def clear():
+    clear = lambda: os.system('clear')
+    time.sleep(3)
+    clear()
 
 if __name__ == "__main__":
 
-    
+
    
     p1_sym = ['♟︎', '♘', '♖', '♗', '♕', '♔']
     #player one create
@@ -445,15 +498,20 @@ if __name__ == "__main__":
     board = Board(p1, p2)
     board.create()
 
+    win = False
+
+    print_main_menu()
+    inp = input("\n\t\t     Press a key to continue")
 
 
-    while True: #Whilst no one has won
+    while not win: #Whilst no one has won
         for idx, player in enumerate((p1, p2)):
 
             print(board)
+           
             
             #Players turn and their pieces
-            print("\n", player)
+            print_player(player)
             player.print_pieces()
             player.print_taken()
             
@@ -467,6 +525,7 @@ if __name__ == "__main__":
                 if valid_moves: 
                     break #if there are possible moves
                 print(f"No valid moves for piece : {piece.name}")
+                clear()
 
             #Update board with the valid positions and print
             board.update_valid(valid_moves, False) #Remove=False
@@ -505,4 +564,5 @@ if __name__ == "__main__":
                 else:
                     piece_taken = p2.remove_piece(new_pos)
                     p1.update_taken(piece_taken)
-            
+   
+            win = player.win()
