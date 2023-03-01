@@ -13,7 +13,6 @@ import time
 class Player:
 
     def __init__(self, pawn_pos, knight_pos, rook_pos, bishop_pos, queen_pos, king_pos,  player_name, piece_sym):
-
         self.piece_sym = piece_sym
 
         self.P1 = Pawn(pawn_pos[0], player_name, 'P1', piece_sym[0])
@@ -37,12 +36,8 @@ class Player:
         self.Q = Queen(queen_pos, player_name, 'Q', piece_sym[4])
         self.K = King(king_pos, player_name, 'K', piece_sym[5])
 
-
-
         self.name = player_name
-
         self.pieces = self.piece_set()
-
         self.taken = []
     
     def __str__(self):
@@ -165,7 +160,7 @@ class Player:
         #check
         #Is king in danger if he doesnt move
         pass
-    
+
     def checkmate(self):
         #King is in peril danger and has no way out, thus he will be destoryed the next turn
         pass
@@ -202,7 +197,6 @@ class Board:
         self.board = []
         self.p1 = p1
         self.p2 = p2
-    
     def __str__(self):
         clear = lambda: os.system('clear')
         clear()
@@ -216,6 +210,16 @@ class Board:
                     print(f" {item} ", end = '')
         return ""
 
+    def create(self):
+        self.board = np.array([[self.p1.R1,   self.p1.KN1,   self.p1.B1,   self.p1.Q,   self.p1.K,   self.p1.B2,   self.p1.KN2,   self.p1.R2],
+                              [self.p1.P1, self.p1.P2, self.p1.P3, self.p1.P4, self.p1.P5, self.p1.P6, self.p1.P7, self.p1.P8],
+                              [' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',   ' _ ',   ' _ '],
+                              [' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',   ' _ ',   ' _ '],
+
+                              [' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',   ' _ ',   ' _ '],
+                              [' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',   ' _ ',   ' _ '],
+                              [self.p2.P1, self.p2.P2, self.p2.P3, self.p2.P4, self.p2.P5, self.p2.P6, self.p2.P7, self.p2.P8],
+                              [self.p2.R1,   self.p2.KN1,   self.p2.B1,   self.p2.Q,   self.p2.K,   self.p2.B2,   self.p2.KN2,   self.p2.R2]])
 
     def get_pos(self, position):
 
@@ -223,7 +227,6 @@ class Board:
         if self.check_bounds(position):
             return self.board[x][y]
         return False
-    
     def set_pos(self, piece, new_pos, player, old_pos):
 
         taken_from = []
@@ -241,17 +244,6 @@ class Board:
         self.board[x][y] = piece
 
         return taken_from
-
-    def create(self):
-        self.board = np.array([[self.p1.R1,   self.p1.KN1,   self.p1.B1,   self.p1.Q,   self.p1.K,   self.p1.B2,   self.p1.KN2,   self.p1.R2],
-                              [self.p1.P1, self.p1.P2, self.p1.P3, self.p1.P4, self.p1.P5, self.p1.P6, self.p1.P7, self.p1.P8],
-                              [' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',   ' _ ',   ' _ '],
-                              [' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',   ' _ ',   ' _ '],
-
-                              [' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',   ' _ ',   ' _ '],
-                              [' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',   ' _ ',   ' _ '],
-                              [self.p2.P1, self.p2.P2, self.p2.P3, self.p2.P4, self.p2.P5, self.p2.P6, self.p2.P7, self.p2.P8],
-                              [self.p2.R1,   self.p2.KN1,   self.p2.B1,   self.p2.Q,   self.p2.K,   self.p2.B2,   self.p2.KN2,   self.p2.R2]])
 
     def update_valid(self, valid_pos, remove):
        
@@ -272,8 +264,6 @@ class Board:
                     self.board[x][y] =  colored(f' {choice} ', 'green', attrs=['blink'])
                 else:
                     item.green = True
-             
-
     def check_valid(self, valid_pos, piece, player_name):
         valid = []
 
@@ -315,15 +305,11 @@ class Board:
     
         return valid    
 
-
     def check_bounds(self, position):
         for i in position:
             if i > 7 or i < 0:
                 return False
         return True
-
-        
-       
 
 
 class Piece():
@@ -398,7 +384,6 @@ class Piece():
         i, j = self.position
         return {"square" :  [(i-1, j-1),(i-1, j), (i-1, j+1), (i, j-1), (i, j+1), (i+1, j-1), (i+1, j), (i+1, j+1)]}
             
-
 class Pawn(Piece):
 
     #returns valid moves
@@ -453,7 +438,6 @@ class King(Piece):
         return self.square()
 
 
-
 def get_valid_piece(player):
     piece_name = input("\nPlease enter piece from following: ").upper()
     while not player.valid_piece(piece_name):
@@ -496,8 +480,6 @@ def clear():
 
 if __name__ == "__main__":
 
-
-   
     p1_sym = ['♟︎', '♘', '♖', '♗', '♕', '♔']
     #player one create
     p1_pawn_pos = [(1,0), (1,1), (1,2), (1,3), (1,4), (1,5), (1,6), (1,7)]
