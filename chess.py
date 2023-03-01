@@ -4,24 +4,17 @@ import sys
 from termcolor import colored, cprint
 import os
 from operator import itemgetter
-
+import pygame
 import time
 
 
 
-"""from pygame.locals import (
-    MOUSEBUTTONDOWN,
-    K_UP,
-    K_ESCAPE,
-    KEYDOWN,
-    QUIT
-)"""
 
 class Player:
 
     def __init__(self, pawn_pos, knight_pos, rook_pos, bishop_pos, queen_pos, king_pos,  player_name, piece_sym):
 
-         
+        self.piece_sym = piece_sym
 
         self.P1 = Pawn(pawn_pos[0], player_name, 'P1', piece_sym[0])
         self.P2 = Pawn(pawn_pos[1], player_name, 'P2', piece_sym[0])
@@ -44,6 +37,8 @@ class Player:
         self.Q = Queen(queen_pos, player_name, 'Q', piece_sym[4])
         self.K = King(king_pos, player_name, 'K', piece_sym[5])
 
+
+
         self.name = player_name
 
         self.pieces = self.piece_set()
@@ -65,7 +60,6 @@ class Player:
             return[
                 [self.P1,  self.P2,  self.P3, self.P4, self.P5, self.P6, self.P7,  self.P8],
                 [self.R1, self.KN1, self.B1, self.K, self.Q, self.B2,  self.KN2,  self.R2]]
-
     def print_pieces(self):
         for row in self.pieces:
             print()
@@ -74,27 +68,21 @@ class Player:
         print()
 
     def valid_piece(self, obj_name):
-        if hasattr(self, obj_name) and self.get_piece_obj(obj_name).alive == True:
+        if hasattr(self, obj_name) and self.get_piece(obj_name).alive == True:
             for row in self.pieces:
                if obj_name in row:
                    return False
             return True
-
-    #returns obj by name
-    def get_piece_obj(self, piece_name):
-        return getattr(self, piece_name)       
-
-    #returns the valid moves
     def get_valid_moves(self, piece):
         if isinstance(piece, Piece):
             return piece.valid_moves()
         else:
             False
-       
+   
+    def get_piece(self, piece_name):
+        return getattr(self, piece_name)       
     def update_piece(self, piece, position):
-        print()
-        piece.position = position
-        
+        piece.position = position  
     def remove_piece(self, position):
 
         for (i, j), piece in np.ndenumerate(self.pieces):
@@ -106,7 +94,6 @@ class Player:
 
     def update_taken(self, piece):
         self.taken.append([piece, getattr(self, piece.upper()).sym])
-
     def print_taken(self):
         if self.taken:
             print("\n      Taken     ")
@@ -136,6 +123,78 @@ class Player:
                     ╚═╝░░░░░╚══════╝╚═╝░░╚═╝░░░╚═╝░░░╚══════╝╚═╝░░╚═╝  ╚══════╝  ░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚══╝╚═════╝░""")
             return True
         return False
+
+    def promotion_types(self, position):
+        print("""
+                1. Rook
+                2. Knight
+                3. Bishop
+                4. Queen""")
+        choice = input("Choose upgrade: ")
+        while choice not in ("1", "2", "3", "4"):
+            choice = input("Choose upgrade: ")
+        
+        if choice == "1":
+            return Rook(position, self.name, 'RX', self.piece_sym[2])
+        if choice == "2":
+            return Knight(position, self.name, 'KnX', self.piece_sym[1])
+        if choice == "3":
+            return Bishop(position, self.name, 'BX', self.piece_sym[3])
+        if choice == "4":
+            return Queen(position, self.name, 'QX', self.piece_sym[4])
+    def check_pawn_promotion(self, piece):
+        row, _ = piece.position
+        if self.name == "1":
+            if row == 7: 
+                setattr(self, piece.name, self.promotion_types(piece.position))
+        else:
+            if row == 0:
+                setattr(self, piece.name, self.promotion_types(piece.position))
+
+        return self.get_piece(piece.name)
+        
+        #Is pawn on the other side of board on its oppposite row
+        #Change object to either
+        # - Rook
+        # - Knight
+        # - Bishop
+        # - Queen
+  
+
+    def check(self):
+        #check
+        #Is king in danger if he doesnt move
+        pass
+    
+    def checkmate(self):
+        #King is in peril danger and has no way out, thus he will be destoryed the next turn
+        pass
+
+    def en_passant(self):
+        #method for pawn piece
+        #"In passing"
+        # Pawn can take pawn next to it by moving diagonal
+        # Cannot en passant a pawn if its enemy piece has moved twice
+        # so pawn should have a bool en passant that is True on first move but when second move is made it is false
+        pass
+
+    def castling(self):
+        #method for king piece
+        #
+        #Rules: 
+        #1 king and rook to be castled must never have moved in game
+        #2 If the path is clear from king to rook then can castle  
+        #3 King cannot escape check from castling
+        #4 can never castle king into a check
+        #5 May never cross a square that is in attack
+        pass
+
+    def draw(self):
+        #1 stalemate - 
+        #2 insufficient material 
+        #3 offer draw
+        #4 thee fold repitition 
+        pass
 
 class Board:
     
@@ -182,41 +241,6 @@ class Board:
         self.board[x][y] = piece
 
         return taken_from
-
-
-    """def create(self):
-
-        pygame.init()
-        Width = 1168
-        Height = 1168
-    
-        scrn = pygame.display.set_mode((Width, Height))
-        
-        pygame.display.set_caption('Chess')
-     
-        imp = pygame.image.load("img/chess_board.png").convert()
-        
-        scrn.blit(imp, (0, 0))
-
-        pygame.display.flip()
-        status = True
-        while (status):
-
-            for event in pygame.event.get():
-
-                if event.type == KEYDOWN and event.key == K_ESCAPE:
-                    status = False
-
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    print(event.button)
-
-                if event.type == pygame.QUIT:
-                    status = False
-
-                
-        
-        pygame.quit()
-        """
 
     def create(self):
         self.board = np.array([[self.p1.R1,   self.p1.KN1,   self.p1.B1,   self.p1.Q,   self.p1.K,   self.p1.B2,   self.p1.KN2,   self.p1.R2],
@@ -434,10 +458,10 @@ def get_valid_piece(player):
     piece_name = input("\nPlease enter piece from following: ").upper()
     while not player.valid_piece(piece_name):
         piece_name = input("\nPlease enter a valid piece: ").upper()
-    return player.get_piece_obj(piece_name) #obj ref
+    return player.get_piece(piece_name) #obj ref
 
 def print_player(player):
-    if player == "1":
+    if player.name == "1":
         print("""
 ███████████████████████████████████████████
 █▄─▄▄─█▄─▄████▀▄─██▄─█─▄█▄─▄▄─█▄─▄▄▀███▀░██
@@ -548,12 +572,18 @@ if __name__ == "__main__":
             
 
             board.update_valid(valid_moves, True) #Remove the green valid movements
-            print(board)
+ 
+            #Update new piece position
+            player.update_piece(piece, new_pos)
 
+            # is the piece a pawn, can we promote the pawn?
+            if isinstance(piece, Pawn):
+                piece = player.check_pawn_promotion(piece)
 
+            #General update of board and new position of piece AND
             #if a piece is taken from enemy, will return player name and pos
             taken_from = board.set_pos(piece, new_pos, player.name, old_pos)
-            player.update_piece(piece, new_pos)
+            
             
 
             if taken_from:
