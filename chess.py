@@ -1,14 +1,8 @@
 #import pygame
 import numpy as np
-import sys
-from termcolor import colored, cprint
+from termcolor import colored
 import os
-from operator import itemgetter
-import pygame
 import time
-
-
-
 
 class Player:
 
@@ -44,13 +38,10 @@ class Player:
         return f"Turn: Player {self.name}"
 
     def piece_set(self):
-        
         if self.name == "1":
             return[
                 [self.R1, self.KN1, self.B1, self.K, self.Q, self.B2,  self.KN2,  self.R2],
                 [self.P1,  self.P2,  self.P3, self.P4, self.P5, self.P6, self.P7,  self.P8]]
-            
-            
         else:
             return[
                 [self.P1,  self.P2,  self.P3, self.P4, self.P5, self.P6, self.P7,  self.P8],
@@ -77,9 +68,9 @@ class Player:
     def get_piece(self, piece_name):
         return getattr(self, piece_name)       
     def update_piece(self, piece, position):
-        piece.position = position  
+        piece.position = position 
+        piece.movements += 1 
     def remove_piece(self, position):
-
         for (i, j), piece in np.ndenumerate(self.pieces):
             if isinstance(piece, Piece):
                 if  piece.position == position:
@@ -99,7 +90,6 @@ class Player:
     
     def win(self):
         if "Q" in [x for (x, _) in self.taken]:
-
             if self.name == "1":
                 print("""
                     ██████╗░██╗░░░░░░█████╗░██╗░░░██╗███████╗██████╗░  ░░███╗░░  ░██╗░░░░░░░██╗██╗███╗░░██╗░██████╗
@@ -155,7 +145,6 @@ class Player:
         # - Bishop
         # - Queen
   
-
     def check(self):
         #check
         #Is king in danger if he doesnt move
@@ -165,13 +154,6 @@ class Player:
         #King is in peril danger and has no way out, thus he will be destoryed the next turn
         pass
 
-    def en_passant(self):
-        #method for pawn piece
-        #"In passing"
-        # Pawn can take pawn next to it by moving diagonal
-        # Cannot en passant a pawn if its enemy piece has moved twice
-        # so pawn should have a bool en passant that is True on first move but when second move is made it is false
-        pass
 
     def castling(self):
         #method for king piece
@@ -222,7 +204,6 @@ class Board:
                               [self.p2.R1,   self.p2.KN1,   self.p2.B1,   self.p2.Q,   self.p2.K,   self.p2.B2,   self.p2.KN2,   self.p2.R2]])
 
     def get_pos(self, position):
-
         x, y = position
         if self.check_bounds(position):
             return self.board[x][y]
@@ -237,18 +218,26 @@ class Board:
         # if the new position is an enemy piece
         # return the enemy name, Else False
         new_item = self.get_pos(new_pos)
+        i,j = new_pos
         if isinstance(new_item, Piece) and new_item.player != player:
             taken_from = ["2", new_pos]  if player == "1" else ["1", new_pos]
+
+       
+        elif isinstance(piece, Pawn) and piece.en_passant == True:
+            taken_from = ["2", (i-1, j)]  if player == "1" else ["1", (i+1, j)]
+            a, b = taken_from[1]
+            self.board[a][b] = " _ "
+            piece.en_passant = False
+
 
         x, y = new_pos
         self.board[x][y] = piece
 
         return taken_from
 
-    def update_valid(self, valid_pos, remove):
-       
+    def update_valid(self, valid_pos, remove): 
         if remove:
-            for choice, (x,y) in enumerate(valid_pos, start=1):
+            for choice, (x, y) in enumerate(valid_pos, start=1):
                 item = self.board[x][y]
 
                 if isinstance(item, Piece):
@@ -257,9 +246,9 @@ class Board:
                         self.board[x][y] = " _ "
 
         else:
-            for choice, (x,y) in enumerate(valid_pos, start=1):
-                item = self.board[x][y]
-
+            for choice, (x, y) in enumerate(valid_pos, start=1):
+                item = self.board[x][y] 
+                
                 if item == ' _ ':
                     self.board[x][y] =  colored(f' {choice} ', 'green', attrs=['blink'])
                 else:
@@ -267,24 +256,26 @@ class Board:
     def check_valid(self, valid_pos, piece, player_name):
         valid = []
 
-        H = []
-
-        #diagonal and straight where and an item blocking will block all further items
         for key, value in valid_pos.items(): 
-
-            for position in value:
+            for idx, position in enumerate(value):
 
                 item = self.get_pos(position)
                 if item:
-                    if item == ' _ ' and key != 'A':
+
+                    if item == ' _ ' and key not in ('A', 'en-passant') :
                         valid.append(position)
                     
                     #If in-path is a piece
                     elif isinstance(item, Piece) and  item.player != player_name:
                         
                         #If starting piece is a pawn and is not in valid attacks 'A' 
-                        if isinstance(piece, Pawn) and key != 'A':
-                            break
+                        if isinstance(piece, Pawn):
+                            if key == "en-passant":
+                                valid.append(valid_pos['A'][idx])
+                                piece.en_passant = True
+                            else:
+                                break
+                        
                         
                         #If starting piece is a pawn and in valid attacks OR a knight
                         # There pieces should not be stopped in their path 
@@ -306,10 +297,12 @@ class Board:
         return valid    
 
     def check_bounds(self, position):
+
         for i in position:
             if i > 7 or i < 0:
                 return False
         return True
+
 
 
 class Piece():
@@ -318,13 +311,11 @@ class Piece():
         self.player = player
         self.name = piece_name
         self.sym = piece_sym
-        self.default = True
         self.alive = True
         self.green = False
-
+        self.movements = 0
     def __str__(self):
         item = self.player + '_' + self.sym
-
         if self.green:
             return colored(item, 'green', attrs=['blink'])
         return item
@@ -339,15 +330,10 @@ class Piece():
         row = list(map(tuple, coord[i , :]))
         column = list(map(tuple, coord[: , j]))
 
-
-
-        dict_={"left": row[:j][::-1],     #sorted(row[:j], key=itemgetter(1)),
+        return {"left": row[:j][::-1],    
              "right": row[j+1:],
-             "up": column[:i][::-1], #if self.player == "1" else column[:i][::-1],
-             "down": column[i+1:]} #if self.player == "1" else column[i+1:][::-1]}
-
-        return dict_
-
+             "up": column[:i][::-1], 
+             "down": column[i+1:]} 
     def diagonal_sub(self, name, iter, i, j):
         if name == "TL":
             return (i - (1*iter), j - (1*iter))
@@ -379,37 +365,38 @@ class Piece():
                 iter += 1
             dict_[key] = temp[1:]
         return dict_          
-
     def square(self):  
         i, j = self.position
         return {"square" :  [(i-1, j-1),(i-1, j), (i-1, j+1), (i, j-1), (i, j+1), (i+1, j-1), (i+1, j), (i+1, j+1)]}
             
 class Pawn(Piece):
 
+    def __init__(self, position, player, piece_name, piece_sym, alive=None):
+        self.position = position
+        self.player = player
+        self.name = piece_name
+        self.sym = piece_sym
+        self.alive = True
+        self.green = False
+        self.movements = 0
+        self.en_passant = False
+
     #returns valid moves
     def valid_moves(self):
         i, j = self.position
+        p = -1 if self.player == "2" else 1
+
+        return  { "H" : [(i + (p*1), j), (i + (p*2), j)] if self.movements == 0 else [(i + (p*1), j)],
+                  "A" : [(i-1, j-1), (i-1, j+1)] if self.player == "2" else [(i+1, j-1),(i+1, j+1)],
+                  "en-passant" : [(i, j-1), (i, j+1)]}
+
+        #method for pawn piece
+        #"In passing"
+        # Pawn can take pawn next to it by moving diagonal
+        # Cannot en passant a pawn if its enemy piece has moved twice
+        # so pawn should have a bool en passant that is True on first move but when second move is made it is false
+
         
-        dict_ = { "H" : [],
-                  "A" : []}
-
-        #Attacking positions
-        p = 1
-        if self.player == "2":
-            dict_['A'] = [(i-1, j-1), (i-1, j+1)]
-            p = -1
-        else:
-            dict_['A'] = [(i+1, j-1),(i+1, j+1)]
-
-
-        #Movements from default and elsewhere
-        if self.default == True:
-            self.default = False
-            dict_["H"] = [tuple(map(lambda i, j: i + j, self.position, (p*i, 0)))  for i in range(1, 3)] #can only move two squares on def
-        else:
-            dict_["H"] = [tuple(map(lambda i, j: i + j, self.position, (p*i, 0))) for i in range(1, 2)]
-    
-        return dict_
 
 class Knight(Piece):
    
@@ -456,8 +443,7 @@ def print_player(player):
 ████████████████████████████████████████████
 █▄─▄▄─█▄─▄████▀▄─██▄─█─▄█▄─▄▄─█▄─▄▄▀███▀▄▄▀█
 ██─▄▄▄██─██▀██─▀─███▄─▄███─▄█▀██─▄─▄████▀▄██
-▀▄▄▄▀▀▀▄▄▄▄▄▀▄▄▀▄▄▀▀▄▄▄▀▀▄▄▄▄▄▀▄▄▀▄▄▀▀▀▄▄▄▄▀""")
-        
+▀▄▄▄▀▀▀▄▄▄▄▄▀▄▄▀▄▄▀▀▄▄▄▀▀▄▄▄▄▄▀▄▄▀▄▄▀▀▀▄▄▄▄▀""")       
 def print_main_menu():
     clear = lambda: os.system('clear')
     clear()
@@ -479,9 +465,8 @@ def clear():
     clear()
 
 if __name__ == "__main__":
-
-    p1_sym = ['♟︎', '♘', '♖', '♗', '♕', '♔']
     #player one create
+    p1_sym = ['♟︎', '♘', '♖', '♗', '♕', '♔']
     p1_pawn_pos = [(1,0), (1,1), (1,2), (1,3), (1,4), (1,5), (1,6), (1,7)]
     p1_knight_pos = [(0,1), (0,6)]
     p1_rook_pos = [(0,0), (0,7)]
@@ -509,14 +494,12 @@ if __name__ == "__main__":
     print_main_menu()
     inp = input("\n\t\t     Press a key to continue")
 
-
     while not win: #Whilst no one has won
         for idx, player in enumerate((p1, p2)):
 
-            print(board)
-           
+            print(board)           
             
-            #Players turn and their pieces
+            #Player's turn and show pieces
             print_player(player)
             player.print_pieces()
             player.print_taken()
@@ -549,32 +532,30 @@ if __name__ == "__main__":
                 except:
                     pass
 
-            #create temp as old position and updates piece with new position
+            #create temp as old position and update player's piece with new position
             old_pos = piece.position
-            
+            player.update_piece(piece, new_pos)
 
             board.update_valid(valid_moves, True) #Remove the green valid movements
  
-            #Update new piece position
-            player.update_piece(piece, new_pos)
-
             # is the piece a pawn, can we promote the pawn?
             if isinstance(piece, Pawn):
                 piece = player.check_pawn_promotion(piece)
 
-            #General update of board and new position of piece AND
-            #if a piece is taken from enemy, will return player name and pos
+            #General update of board with new position of piece AND
+            #if a piece is taken from enemy, will return player name and pos of taken
             taken_from = board.set_pos(piece, new_pos, player.name, old_pos)
             
-            
-
             if taken_from:
-                if p1.name == taken_from[0]:
+                if taken_from[0] == "1":
                     #piece name taken and updated scoreboard (taken pieces) for that player
-                    piece_taken = p1.remove_piece(new_pos)
+                    piece_taken = p1.remove_piece(taken_from[1])
                     p2.update_taken(piece_taken)
                 else:
-                    piece_taken = p2.remove_piece(new_pos)
+                    piece_taken = p2.remove_piece(taken_from[1])
                     p1.update_taken(piece_taken)
    
+            #has anybody won yet?
             win = player.win()
+            if win:
+                break
