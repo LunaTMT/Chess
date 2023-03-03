@@ -145,6 +145,7 @@ class Player:
         # - Bishop
         # - Queen
   
+
     def check(self):
         #check
         #Is king in danger if he doesnt move
@@ -152,18 +153,6 @@ class Player:
 
     def checkmate(self):
         #King is in peril danger and has no way out, thus he will be destoryed the next turn
-        pass
-
-
-    def castling(self):
-        #method for king piece
-        #
-        #Rules: 
-        #1 king and rook to be castled must never have moved in game
-        #2 If the path is clear from king to rook then can castle  
-        #3 King cannot escape check from castling
-        #4 can never castle king into a check
-        #5 May never cross a square that is in attack
         pass
 
     def draw(self):
@@ -193,6 +182,7 @@ class Board:
         return ""
 
     def create(self):
+
         self.board = np.array([[self.p1.R1,   self.p1.KN1,   self.p1.B1,   self.p1.Q,   self.p1.K,   self.p1.B2,   self.p1.KN2,   self.p1.R2],
                               [self.p1.P1, self.p1.P2, self.p1.P3, self.p1.P4, self.p1.P5, self.p1.P6, self.p1.P7, self.p1.P8],
                               [' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',   ' _ ',   ' _ '],
@@ -203,6 +193,7 @@ class Board:
                               [self.p2.P1, self.p2.P2, self.p2.P3, self.p2.P4, self.p2.P5, self.p2.P6, self.p2.P7, self.p2.P8],
                               [self.p2.R1,   self.p2.KN1,   self.p2.B1,   self.p2.Q,   self.p2.K,   self.p2.B2,   self.p2.KN2,   self.p2.R2]])
 
+                              #
     def get_pos(self, position):
         x, y = position
         if self.check_bounds(position):
@@ -218,11 +209,29 @@ class Board:
         # if the new position is an enemy piece
         # return the enemy name, Else False
         new_item = self.get_pos(new_pos)
+        
+    
         i,j = new_pos
         if isinstance(new_item, Piece) and new_item.player != player:
             taken_from = ["2", new_pos]  if player == "1" else ["1", new_pos]
 
-       
+        #Castling
+        elif isinstance(new_item, Rook) and isinstance(piece, King) and new_item.player == player:
+            if new_pos > old_pos:
+                self.board[a][b+2] = piece
+                self.board[i][j-2] = new_item # rook
+                piece.position = (a, b+2)
+                new_item.position = (i, j-2)
+            else:
+                self.board[a][b-2] = piece
+                self.board[i][j+3] = new_item 
+                piece.position = (a, b-2)
+                new_item.position = (i, j+3)
+            
+            self.board[i][j] = " _ "
+            return None
+
+        #en_passant
         elif isinstance(piece, Pawn) and piece.en_passant == True:
             taken_from = ["2", (i-1, j)]  if player == "1" else ["1", (i+1, j)]
             a, b = taken_from[1]
@@ -253,6 +262,7 @@ class Board:
                     self.board[x][y] =  colored(f' {choice} ', 'green', attrs=['blink'])
                 else:
                     item.green = True
+                 
     def check_valid(self, valid_pos, piece, player_name):
         valid = []
 
@@ -262,13 +272,20 @@ class Board:
                 item = self.get_pos(position)
                 if item:
 
-                    if item == ' _ ' and key not in ('A', 'en-passant') :
+                    if item == ' _ ' and key not in ('pawn_attack', 'en-passant', 'KS_castling', 'QS_castling') :
                         valid.append(position)
-                    
-                    #If in-path is a piece
+
+                    elif key[-8:] == "castling":
+
+                            rook = self.get_pos(valid_pos[key][-1])
+                            if isinstance(rook, Rook):
+                                if rook.movements != 0:
+                                    break
+                            valid.append(position)
+
+
                     elif isinstance(item, Piece) and  item.player != player_name:
                         
-                        #If starting piece is a pawn and is not in valid attacks 'A' 
                         if isinstance(piece, Pawn):
                             if key == "en-passant":
                                 valid.append(valid_pos['A'][idx])
@@ -276,26 +293,25 @@ class Board:
                             else:
                                 break
                         
-                        
-                        #If starting piece is a pawn and in valid attacks OR a knight
-                        # There pieces should not be stopped in their path 
-                        elif (isinstance(piece, Pawn) and key == 'A') or isinstance(piece, Knight):
+                        elif key in ("L, square, pawn_attack"):
                             valid.append(position)
                         
-                        #Every other piece beyond the path is blocked when there is a piece in the way
                         else:
                             valid.append(position)
                             break
                             
+                    #elif key in ("left", "right", "up", "down", "TL", "TR", "BL", "BR"): #Must break as succeeding values all invalid for horizontal and diagonal
+                    elif key == "square":
+                        pass
 
-                    elif key in ("left", "right", "up", "down", "TL", "TR", "BL", "BR"): #Must break as succeeding values all invalid for horizontal and diagonal
+                    else:
                         break
 
         if isinstance(piece, Queen):
             return list(set(valid))
     
         return valid    
-
+    
     def check_bounds(self, position):
 
         for i in position:
@@ -330,10 +346,11 @@ class Piece():
         row = list(map(tuple, coord[i , :]))
         column = list(map(tuple, coord[: , j]))
 
-        return {"left": row[:j][::-1],    
-             "right": row[j+1:],
-             "up": column[:i][::-1], 
-             "down": column[i+1:]} 
+        return  {"left": row[:j][::-1],    
+                    "right": row[j+1:],
+                    "up": column[:i][::-1], 
+                    "down": column[i+1:]}
+    
     def diagonal_sub(self, name, iter, i, j):
         if name == "TL":
             return (i - (1*iter), j - (1*iter))
@@ -364,13 +381,13 @@ class Piece():
                 x, y = temp[iter-1]
                 iter += 1
             dict_[key] = temp[1:]
-        return dict_          
+        return  dict_
+             
     def square(self):  
         i, j = self.position
         return {"square" :  [(i-1, j-1),(i-1, j), (i-1, j+1), (i, j-1), (i, j+1), (i+1, j-1), (i+1, j), (i+1, j+1)]}
             
 class Pawn(Piece):
-
     def __init__(self, position, player, piece_name, piece_sym, alive=None):
         self.position = position
         self.player = player
@@ -386,17 +403,9 @@ class Pawn(Piece):
         i, j = self.position
         p = -1 if self.player == "2" else 1
 
-        return  { "H" : [(i + (p*1), j), (i + (p*2), j)] if self.movements == 0 else [(i + (p*1), j)],
-                  "A" : [(i-1, j-1), (i-1, j+1)] if self.player == "2" else [(i+1, j-1),(i+1, j+1)],
+        return  { "pawn_horizontal" : [(i + (p*1), j), (i + (p*2), j)] if self.movements == 0 else [(i + (p*1), j)],
+                  "pawn_attack" : [(i-1, j-1), (i-1, j+1)] if self.player == "2" else [(i+1, j-1),(i+1, j+1)],
                   "en-passant" : [(i, j-1), (i, j+1)]}
-
-        #method for pawn piece
-        #"In passing"
-        # Pawn can take pawn next to it by moving diagonal
-        # Cannot en passant a pawn if its enemy piece has moved twice
-        # so pawn should have a bool en passant that is True on first move but when second move is made it is false
-
-        
 
 class Knight(Piece):
    
@@ -422,7 +431,25 @@ class Queen(Piece):
 class King(Piece):
     
     def valid_moves(self):
-        return self.square()
+        return self.square() | self.castling()
+    
+    def castling(self):
+        if self.movements == 0:
+            i,j = self.position
+            return {"KS_castling" : [(i,j+2), (i,j+3)],
+                     "QS_castling" : [(i,j-2), (i,j-3), (i, j-4)]}            
+        return {}
+        
+        #method for king piece
+        #
+        #Rules: 
+        #1 king and rook to be castled must never have moved in game
+        #2 If the path is clear from king to rook then can castle  
+        #3 King cannot escape check from castling
+        #4 can never castle king into a check
+        #5 May never cross a square that is in attack
+        
+
 
 
 def get_valid_piece(player):
@@ -546,6 +573,7 @@ if __name__ == "__main__":
             #if a piece is taken from enemy, will return player name and pos of taken
             taken_from = board.set_pos(piece, new_pos, player.name, old_pos)
             
+           
             if taken_from:
                 if taken_from[0] == "1":
                     #piece name taken and updated scoreboard (taken pieces) for that player
