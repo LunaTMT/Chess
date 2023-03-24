@@ -33,7 +33,13 @@ class Player:
         self.name = player_name
         self.pieces = self.piece_set()
         self.taken = []
+        self.checked = False
+        self.checkmate = False
+        self.all_valid_moves =  [(piece.valid_moves(), piece) for row in self.pieces for piece in row]
+        
+        self.possibile_attacks = np.zeros((8,8))
     
+
     def __str__(self):
         return f"Turn: Player {self.name}"
 
@@ -47,11 +53,20 @@ class Player:
                 [self.P1,  self.P2,  self.P3, self.P4, self.P5, self.P6, self.P7,  self.P8],
                 [self.R1, self.KN1, self.B1, self.K, self.Q, self.B2,  self.KN2,  self.R2]]
     def print_pieces(self):
-        for row in self.pieces:
+
+        if self.checked == True:
+            print("\n         You're in Check")
+            for row in self.pieces:
+                print()
+                for piece in row:
+                    print(f'  {piece.name} ' if isinstance(piece, King) else f'  _ ', end="")
             print()
-            for piece in row:
-                print(f' {piece.name} ' if isinstance(piece, Piece) else f'  _ ', end="")
-        print()
+        else:
+            for row in self.pieces:
+                print()
+                for piece in row:
+                    print(f' {piece.name} ' if isinstance(piece, Piece) else f'  _ ', end="")
+            print()
 
     def valid_piece(self, obj_name):
         if hasattr(self, obj_name) and self.get_piece(obj_name).alive == True:
@@ -68,6 +83,9 @@ class Player:
     def get_piece(self, piece_name):
         return getattr(self, piece_name)       
     def update_piece(self, piece, position):
+        if isinstance(piece, King):
+            self.checked = False
+            
         piece.position = position 
         piece.movements += 1 
     def remove_piece(self, position):
@@ -89,7 +107,7 @@ class Player:
                 print(f"|   {piece[0]}  |  {piece[1]}   |")
     
     def win(self):
-        if "Q" in [x for (x, _) in self.taken]:
+        if "K" in [x for (x, _) in self.taken]:
             if self.name == "1":
                 print("""
                     ██████╗░██╗░░░░░░█████╗░██╗░░░██╗███████╗██████╗░  ░░███╗░░  ░██╗░░░░░░░██╗██╗███╗░░██╗░██████╗
@@ -107,6 +125,7 @@ class Player:
                     ██║░░░░░███████╗██║░░██║░░░██║░░░███████╗██║░░██║  ███████╗  ░░╚██╔╝░╚██╔╝░██║██║░╚███║██████╔╝
                     ╚═╝░░░░░╚══════╝╚═╝░░╚═╝░░░╚═╝░░░╚══════╝╚═╝░░╚═╝  ╚══════╝  ░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚══╝╚═════╝░""")
             return True
+
         return False
 
     def promotion_types(self, position):
@@ -144,16 +163,19 @@ class Player:
         # - Knight
         # - Bishop
         # - Queen
-  
 
-    def check(self):
-        #check
-        #Is king in danger if he doesnt move
-        pass
-
-    def checkmate(self):
+    def checkmated(self, king_valid_moves, enemy):
         #King is in peril danger and has no way out, thus he will be destoryed the next turn
-        pass
+        
+        
+        for position in king_valid_moves:                  
+            enemy.checkmate = True
+
+            if self.possibile_attacks[position] == "0":
+                enemy.checkmate = False
+                break
+        
+
 
     def draw(self):
         #1 stalemate - 
@@ -161,6 +183,8 @@ class Player:
         #3 offer draw
         #4 thee fold repitition 
         pass
+
+
 
 class Board:
     
@@ -192,6 +216,7 @@ class Board:
                               [' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',  ' _ ',   ' _ ',   ' _ '],
                               [self.p2.P1, self.p2.P2, self.p2.P3, self.p2.P4, self.p2.P5, self.p2.P6, self.p2.P7, self.p2.P8],
                               [self.p2.R1,   self.p2.KN1,   self.p2.B1,   self.p2.Q,   self.p2.K,   self.p2.B2,   self.p2.KN2,   self.p2.R2]])
+        
 
                               #
     def get_pos(self, position):
@@ -281,15 +306,18 @@ class Board:
                             if isinstance(rook, Rook):
                                 if rook.movements != 0:
                                     break
-                            valid.append(position)
-
+                            if item == ' _ ':
+                                valid.append(position)
+                            else:
+                                break
 
                     elif isinstance(item, Piece) and  item.player != player_name:
                         
                         if isinstance(piece, Pawn):
-                            if key == "en-passant":
-                                valid.append(valid_pos['A'][idx])
-                                piece.en_passant = True
+                            if key in ("en-passant", "pawn_attack"):
+                                valid.append(valid_pos['pawn_attack'][idx])
+                                if key == "en-passant":
+                                    piece.en_passant = True
                             else:
                                 break
                         
@@ -299,9 +327,8 @@ class Board:
                         else:
                             valid.append(position)
                             break
-                            
-                    #elif key in ("left", "right", "up", "down", "TL", "TR", "BL", "BR"): #Must break as succeeding values all invalid for horizontal and diagonal
-                    elif key == "square":
+                                         
+                    elif key in ("square", "L"):
                         pass
 
                     else:
@@ -453,8 +480,10 @@ class King(Piece):
 
 
 def get_valid_piece(player):
+
     piece_name = input("\nPlease enter piece from following: ").upper()
-    while not player.valid_piece(piece_name):
+
+    while not player.valid_piece(piece_name) or (player.checked == True and piece_name != "K"):
         piece_name = input("\nPlease enter a valid piece: ").upper()
     return player.get_piece(piece_name) #obj ref
 
@@ -485,6 +514,7 @@ def print_main_menu():
 
             █████╗█████╗█████╗█████╗█████╗█████╗█████╗
             ╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝╚════╝""")
+
 
 def clear():
     clear = lambda: os.system('clear')
@@ -524,8 +554,10 @@ if __name__ == "__main__":
     while not win: #Whilst no one has won
         for idx, player in enumerate((p1, p2)):
 
-            print(board)           
+            enemy = p2 if player == p1 else p1
             
+            print(board)           
+
             #Player's turn and show pieces
             print_player(player)
             player.print_pieces()
@@ -538,6 +570,10 @@ if __name__ == "__main__":
                 valid_moves = player.get_valid_moves(piece) #Gets the valid moves for the given piece
                 valid_moves = board.check_valid(valid_moves, piece, player.name) #Are there any conflics on the board for these valid moves
                 
+                if piece.name == "K":
+                   valid_moves = [i for i in valid_moves if enemy.possibile_attacks[i] != "1"]
+
+    
                 if valid_moves: 
                     break #if there are possible moves
                 print(f"No valid moves for piece : {piece.name}")
@@ -573,17 +609,48 @@ if __name__ == "__main__":
             #if a piece is taken from enemy, will return player name and pos of taken
             taken_from = board.set_pos(piece, new_pos, player.name, old_pos)
             
-           
             if taken_from:
+                piece_taken = enemy.remove_piece(taken_from[1])
+                player.update_taken(piece_taken)
+           
+            """if taken_from:
                 if taken_from[0] == "1":
                     #piece name taken and updated scoreboard (taken pieces) for that player
                     piece_taken = p1.remove_piece(taken_from[1])
                     p2.update_taken(piece_taken)
                 else:
                     piece_taken = p2.remove_piece(taken_from[1])
-                    p1.update_taken(piece_taken)
+                    p1.update_taken(piece_taken)"""
    
-            #has anybody won yet?
-            win = player.win()
-            if win:
+
+            #All the possible attacks that can be made for that player
+            player.possibile_attacks = np.zeros((8,8), str)
+            for _, piece in np.ndenumerate(player.pieces):
+            
+                if isinstance(piece, Piece):
+                
+                    valid_moves = player.get_valid_moves(piece) #Get valid 
+                    valid_moves = board.check_valid(valid_moves, piece, player.name)
+
+                    player.possibile_attacks[piece.position] = piece.sym
+
+                    for (i,j) in valid_moves:
+                        player.possibile_attacks[i,j] = "1"
+
+
+
+            #Is the enemy king in the line of sight for all my possible attacks?
+            
+            enemy_king = enemy.get_piece("K")
+
+            if player.possibile_attacks[enemy_king.position] == "1": 
+                enemy.checked = True
+                valid_moves = board.check_valid(enemy_king.valid_moves(), enemy_king, enemy.name)
+                player.checkmated(valid_moves, enemy)
+
+            if enemy.checkmate:
+                print("Checkmate")
                 break
+            
+            elif enemy.checked:
+                print("check")
